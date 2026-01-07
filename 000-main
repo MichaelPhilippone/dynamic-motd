@@ -29,8 +29,8 @@ run_motd_script() {
 }
 
 # Start all scripts in parallel
-for script in $MOTD_DIR/[0-9][0-9]-*; do
-    [[ "$script" == *"00-main" ]] && continue
+for script in $MOTD_DIR/[0-9][0-9][0-9]-*; do
+    [[ "$script" == *"000-main" ]] && continue
     run_motd_script "$script"
 done
 
@@ -38,8 +38,8 @@ done
 wait
 
 # Collect and display output in order
-for script in $MOTD_DIR/[0-9][0-9]-*; do
-    [[ "$script" == *"00-main" ]] && continue
+for script in $MOTD_DIR/[0-9][0-9][0-9]-*; do
+    [[ "$script" == *"000-main" ]] && continue
     
     script_name=$(basename "$script")
     output_file="$TMPDIR/$script_name.out"
