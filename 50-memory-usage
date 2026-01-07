@@ -1,0 +1,22 @@
+#!/bin/bash
+# Memory and swap usage
+
+printf "\033[1m💾 Memory Usage:\033[0m\n"
+# Total memory
+total_mem=$(free -h | awk '/^Mem:/ {print $2}')
+used_mem=$(free -h | awk '/^Mem:/ {print $3}')
+mem_percent=$(free | awk '/^Mem:/ {printf "%.0f", ($3/$2)*100}')
+
+# Swap
+total_swap=$(free -h | awk '/^Swap:/ {print $2}')
+used_swap=$(free -h | awk '/^Swap:/ {print $3}')
+
+if [[ "$used_swap" == "0B" ]]; then
+    swap_text="\033[90m(not in use)\033[0m"
+else
+    swap_percent=$(free | awk '/^Swap:/ {printf "%.0f", ($3/$2)*100}')
+    swap_text="$used_swap / $total_swap ($swap_percent%)"
+fi
+
+printf "  RAM:   %s / %s (%d%%)\n" "$used_mem" "$total_mem" "$mem_percent"
+printf "  Swap:  %b\n" "$swap_text"

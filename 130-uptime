@@ -1,0 +1,12 @@
+#!/bin/bash
+# System uptime and last reboot
+
+uptime_output=$(uptime -p 2>/dev/null || uptime | sed 's/.*up //' | sed 's/,.*//')
+last_reboot=$(last -1 | awk '{print $1}' | head -1)
+last_reboot_time=$(last -1 reboot | awk '{print $5, $6, $7, $8}' 2>/dev/null | head -1)
+
+printf "\033[1m⏱ System Uptime:\033[0m\n"
+printf "  %s\n" "$uptime_output"
+if [[ -n "$last_reboot_time" ]]; then
+    printf "  Last reboot: %s\n" "$last_reboot_time"
+fi

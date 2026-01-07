@@ -1,0 +1,30 @@
+#!/bin/bash
+# Recent cron job failures
+
+check_cron_log() {
+    local user=$1
+    local crontab_file="/var/spool/cron/crontabs/$user"
+    
+    # Check if user has cron jobs
+    [[ ! -f "$crontab_file" ]] && return 1
+    
+    # Look for CRON commands with exit codes > 0 in syslog (last 24 hours)
+    if grep -E "CRON.*CMD.*exit status [1-9]" /var/log/syslog 2>/dev/null | tail -1 | grep -q "$user"; then
+        return 0
+    fi
+    return 1
+}
+
+failed_users=()
+for user in pi root; do
+    if check_cron_log "$user"; then
+        failed_users+=("$user")
+    fi
+done
+
+if [[ ${#failed_users[@]} -gt 0 ]]; then
+    printf "\033[1;33m⚠ Cron job failures detected:\033[0m\n"
+    for user in "${failed_users[@]}"; do
+        grep -E "CRON.*CMD.*exit status [1-9].*$user" /var/log/syslog 2>/dev/null | tail -2 | sed 's/^/  /' || true
+    done
+fi

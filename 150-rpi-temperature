@@ -1,0 +1,33 @@
+#!/bin/bash
+# RPi CPU temperature
+
+# Try multiple temperature file locations for different RPi models
+temp_file=""
+for path in /sys/class/thermal/thermal_zone0/temp /sys/devices/virtual/thermal/thermal_zone0/temp; do
+    if [[ -r "$path" ]]; then
+        temp_file="$path"
+        break
+    fi
+done
+
+if [[ -z "$temp_file" ]]; then
+    exit 0
+fi
+
+# Read and convert temperature (millidegrees Celsius to Celsius)
+temp_celsius=$(($(cat "$temp_file") / 1000))
+
+# Determine color based on temperature
+if [[ $temp_celsius -lt 50 ]]; then
+    temp_color="\033[32m"  # Green
+elif [[ $temp_celsius -lt 70 ]]; then
+    temp_color="\033[33m"  # Yellow
+else
+    temp_color="\033[31m"  # Red
+fi
+
+# For Fahrenheit (per user rules)
+temp_fahrenheit=$(( (temp_celsius * 9 / 5) + 32 ))
+
+printf "\033[1m🌡 CPU Temperature:\033[0m\n"
+printf "  %b%d°F\033[0m (%d°C)\n" "$temp_color" "$temp_fahrenheit" "$temp_celsius"

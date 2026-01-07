@@ -1,0 +1,14 @@
+#!/bin/bash
+# Disk usage by partition (highlight >80% full)
+
+printf "\033[1m📊 Disk Usage:\033[0m\n"
+df -h | grep -vE '^Filesystem|tmpfs|devtmpfs' | awk '{
+    if (NR == 1) next
+    gsub(/%/, "", $5)
+    usage = int($5)
+    if (usage >= 80) {
+        printf "  \033[1;31m%-30s %6s / %6s (%3d%%)\033[0m\n", $6, $3, $2, usage
+    } else {
+        printf "  %-30s %6s / %6s (%3d%%)\n", $6, $3, $2, usage
+    }
+}'

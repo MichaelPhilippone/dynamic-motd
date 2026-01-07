@@ -1,0 +1,29 @@
+#!/bin/bash
+# RPi power supply status (voltage monitoring)
+
+# Check for under-voltage warnings in kernel logs
+# This is the most reliable way to detect power supply issues
+under_voltage=$(dmesg | grep -i "under.voltage\|low voltage" | tail -1)
+
+if [[ -n "$under_voltage" ]]; then
+    printf "\033[1;31m⚠ Power Supply Issue Detected:\033[0m\n"
+    printf "  %s\n" "$under_voltage"
+fi
+
+# Alternative: Check throttling status if vcgencmd is available
+if command -v vcgencmd &> /dev/null; then
+    throttled=$(vcgencmd get_throttled 2>/dev/null | cut -d= -f2)
+    
+    if [[ -n "$throttled" && "$throttled" != "0x0" ]]; then
+        printf "\033[1m⚡ Throttling Status:\033[0m\n"
+        
+        # Parse throttling bits (throttled already includes 0x prefix)
+        [[ $(($throttled & 0x1)) -ne 0 ]] && printf "  \033[31m✗ Currently under-volted\033[0m\n"
+        [[ $(($throttled & 0x2)) -ne 0 ]] && printf "  \033[31m✗ Currently throttled\033[0m\n"
+        [[ $(($throttled & 0x4)) -ne 0 ]] && printf "  \033[33m⚠ ARM frequency capped\033[0m\n"
+        [[ $(($throttled & 0x10000)) -ne 0 ]] && printf "  \033[33m⚠ Under-voltage detected (history)\033[0m\n"
+        [[ $(($throttled & 0x20000)) -ne 0 ]] && printf "  \033[33m⚠ Throttled (history)\033[0m\n"
+    else
+        printf "\033[1m✓ Power Status:\033[0m Normal\n"
+    fi
+fi

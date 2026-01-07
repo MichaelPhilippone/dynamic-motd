@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Main MOTD orchestrator - runs all helper scripts in parallel with timeouts
+# Version 2.0 - Simplified bashrc integration (no PAM complexity)
+# Each script runs independently and reports its execution time
+
+MOTD_DIR="$HOME/Projects/dynamic-motd"
+TIMEOUT=5  # seconds per script
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
+# Helper functions
+run_motd_script() {
+    local script=$1
+    local output_file="$TMPDIR/$(basename $script).out"
+    local time_file="$TMPDIR/$(basename $script).time"
+    local status_file="$TMPDIR/$(basename $script).status"
+    
+    # Run script with timeout in background
+    (
+        start_time=$(date +%s%N)
+        timeout $TIMEOUT bash "$script" > "$output_file" 2>&1
+        exit_code=$?
+        end_time=$(date +%s%N)
+        elapsed_ms=$(( (end_time - start_time) / 1000000 ))
+        echo "$elapsed_ms" > "$time_file"
+        echo "$exit_code" > "$status_file"
+    ) &
+}
+
+# Start all scripts in parallel
+for script in $MOTD_DIR/[0-9][0-9]-*; do
+    [[ "$script" == *"00-main" ]] && continue
+    run_motd_script "$script"
+done
+
+# Wait for all background jobs
+wait
+
+# Collect and display output in order
+for script in $MOTD_DIR/[0-9][0-9]-*; do
+    [[ "$script" == *"00-main" ]] && continue
+    
+    script_name=$(basename "$script")
+    output_file="$TMPDIR/$script_name.out"
+    time_file="$TMPDIR/$script_name.time"
+    status_file="$TMPDIR/$script_name.status"
+    
+    # Check if script completed
+    if [[ ! -f "$status_file" ]]; then
+        printf "  \033[33m⚠ Script not run: %s\033[0m\n" "$script"
+        continue
+    fi
+    
+    exit_code=$(cat "$status_file")
+    elapsed_ms=$(cat "$time_file" 2>/dev/null || echo "0")
+    
+    # Check if script timed out (exit code 124 from timeout command)
+    if [[ $exit_code -eq 124 ]]; then
+        printf "  \033[31m✗ Timed out (>%ds): %s\033[0m\n" "$TIMEOUT" "$script"
+        continue
+    fi
+    
+    # Check if script had an error (non-zero exit code)
+    if [[ $exit_code -ne 0 ]]; then
+        printf "  \033[31m✗ Failed (exit %d): %s\033[0m\n" "$exit_code" "$script"
+        # Still show output in case it's useful
+        if [[ -f "$output_file" ]] && [[ -s "$output_file" ]]; then
+            cat "$output_file"
+        fi
+        continue
+    fi
+    
+    # Script succeeded - show output if it produced any
+    if [[ -f "$output_file" ]] && [[ -s "$output_file" ]]; then
+        cat "$output_file"
+        
+        # Show timing if >= 100ms
+        if (( elapsed_ms >= 100 )); then
+            printf "  \033[90m(%dms)\033[0m\n" "$elapsed_ms"
+        fi
+    fi
+done
+
+# Add timestamp at the end
+printf "\n\033[90mLast updated: %s\033[0m\n" "$(date '+%a %b %d %H:%M:%S %Z %Y')"
