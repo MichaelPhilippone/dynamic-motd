@@ -9,6 +9,13 @@ check_dirs=(
     /opt
 )
 
+# Directories to exclude (e.g., Trash, backups)
+exclude_patterns=(
+    "*/Trash/*"
+    "*.backup.*"
+    "*/.Trash/*"
+)
+
 found_issues=0
 
 for base_dir in "${check_dirs[@]}"; do
@@ -18,6 +25,18 @@ for base_dir in "${check_dirs[@]}"; do
     while IFS= read -r -d '' git_dir; do
         repo_dir=$(dirname "$git_dir")
         repo_name=$(basename "$repo_dir")
+        
+        # Check if repo matches any exclude pattern
+        excluded=0
+        for pattern in "${exclude_patterns[@]}"; do
+            if [[ "$repo_dir" == $pattern ]]; then
+                excluded=1
+                break
+            fi
+        done
+        
+        # Skip if excluded
+        [[ $excluded -eq 1 ]] && continue
         
         cd "$repo_dir" 2>/dev/null || continue
         
