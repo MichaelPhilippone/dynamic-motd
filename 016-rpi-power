@@ -27,3 +27,4 @@ if command -v vcgencmd &> /dev/null; then
         printf "\033[1m✓ Power Status:\033[0m Normal\n"
     fi
 fi
+exit 0
