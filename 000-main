@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Main MOTD orchestrator - runs all helper scripts in parallel with timeouts
-# Version 2.0 - Simplified bashrc integration (no PAM complexity)
+# Version 2.1 - Simplified bashrc integration (no PAM complexity)
 # Each script runs independently and reports its execution time
 
 MOTD_DIR="$HOME/Projects/dynamic-motd"

@@ -1,13 +1,11 @@
-# Dynamic MOTD System v2.0
+# Dynamic MOTD System v2.1
 
 A comprehensive, modular system for displaying dynamic login messages on Raspberry Pi (and other Linux systems) with parallel execution and atomic script isolation.
 
-**Version 2.0 Changes:**
-- ✅ Simplified: No more PAM complexity
-- ✅ User-space: Runs from `~/Projects/dynamic-motd`
-- ✅ Bashrc integration: Displays on interactive shell login
-- ✅ No sudo required for viewing (sudo only needed for scripts that check system status)
-
+**Version 2.1 Changes:**
+- ✅ Sequential numbering: Scripts now numbered 000-016 for clean natural sorting
+- ✅ Simpler patterns: Three-digit format eliminates sorting issues
+- ✅ Scalable: Easy to insert new scripts anywhere in sequence
 ## Features
 
 - **Parallel Execution**: All scripts run simultaneously for minimal login latency
@@ -183,26 +181,24 @@ TIMEOUT=10  # Increase to 10 seconds
 
 ```
 ~/Projects/dynamic-motd/
-├── 00-main                 # Main orchestrator
-├── 10-systemd-failed       # Failed services check
-├── 20-cron-failures        # Cron job failures
-├── 30-divider-1           # Visual separator
-├── 40-disk-usage          # Disk space monitoring
-├── 50-memory-usage        # RAM/swap usage
-├── 60-divider-2           # Visual separator
-├── 70-docker-status       # Docker containers
-├── 80-git-repos           # Git repository status
-├── 90-divider-3           # Visual separator
-├── 100-package-updates    # Available updates
-├── 110-divider-4          # Visual separator
-├── 120-cert-expiry        # SSL certificate expiry
-├── 130-uptime             # System uptime
-├── 140-divider-5          # Visual separator
-├── 150-rpi-temperature    # CPU temperature
-├── 160-rpi-power          # Power/throttling status
-└── README.md              # This file
-```
-
+├── 000-main                 # Main orchestrator
+├── 001-systemd-failed       # Failed services check
+├── 002-cron-failures        # Cron job failures
+├── 003-divider-1           # Visual separator
+├── 004-disk-usage          # Disk space monitoring
+├── 005-memory-usage        # RAM/swap usage
+├── 006-divider-2           # Visual separator
+├── 007-docker-status       # Docker containers
+├── 008-git-repos           # Git repository status
+├── 009-divider-3           # Visual separator
+├── 010-package-updates     # Available updates
+├── 011-divider-4           # Visual separator
+├── 012-cert-expiry         # SSL certificate expiry
+├── 013-uptime              # System uptime
+├── 014-divider-5           # Visual separator
+├── 015-rpi-temperature     # CPU temperature
+├── 016-rpi-power           # Power/throttling status
+└── README.md               # This file
 ## Performance
 
 Typical execution times:
