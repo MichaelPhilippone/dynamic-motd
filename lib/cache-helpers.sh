@@ -43,3 +43,36 @@ cache_stale() {
     local file_age=$(($(date +%s) - $(stat -c %Y "$cache_file")))
     [[ $file_age -gt $max_age ]]
 }
+
+# Get human-readable cache age string
+# Usage: cache_age_str "key"
+# Returns: string like "2 min ago", "1 hr ago", "3 hrs ago"
+cache_age_str() {
+    local key="$1"
+    local cache_file="$MOTD_CACHE_DIR/$key"
+    
+    [[ ! -f "$cache_file" ]] && echo "no cache" && return
+    
+    local file_age=$(($(date +%s) - $(stat -c %Y "$cache_file")))
+    
+    if [[ $file_age -lt 60 ]]; then
+        echo "${file_age}s ago"
+    elif [[ $file_age -lt 3600 ]]; then
+        local mins=$((file_age / 60))
+        echo "${mins} min ago"
+    elif [[ $file_age -lt 86400 ]]; then
+        local hrs=$((file_age / 3600))
+        if [[ $hrs -eq 1 ]]; then
+            echo "1 hr ago"
+        else
+            echo "${hrs} hrs ago"
+        fi
+    else
+        local days=$((file_age / 86400))
+        if [[ $days -eq 1 ]]; then
+            echo "1 day ago"
+        else
+            echo "${days} days ago"
+        fi
+    fi
+}

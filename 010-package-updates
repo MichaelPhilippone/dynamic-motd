@@ -4,8 +4,12 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/cache-helpers.sh"
 
+CACHE_KEY="package-updates"
+from_cache=false
+
 # Try cache first (valid for 6 hours = 21600 seconds)
-if cached=$(read_cache "package-updates" 21600); then
+if cached=$(read_cache "$CACHE_KEY" 21600); then
+    from_cache=true
     total=$(echo "$cached" | cut -d: -f1)
     security=$(echo "$cached" | cut -d: -f2)
 else
@@ -14,10 +18,15 @@ else
     security=$(apt list --upgradable 2>/dev/null | grep -iE "security" | wc -l)
 fi
 
+cache_suffix=""
+if $from_cache; then
+    cache_suffix=" \033[90m(cached $(cache_age_str "$CACHE_KEY"))\033[0m"
+fi
+
 if [[ $total -eq 0 ]]; then
-    printf "\033[1;32m✓ System is up to date\033[0m\n"
+    printf "\033[1;32m✓ System is up to date\033[0m$cache_suffix\n"
 else
-    printf "\033[1m📦 Package Updates:\033[0m\n"
+    printf "\033[1m📦 Package Updates:\033[0m$cache_suffix\n"
     printf "  Total updates: %d\n" "$total"
     
     if [[ $security -gt 0 ]]; then
