@@ -5,7 +5,7 @@
 # Each script runs independently and reports its execution time
 
 MOTD_DIR="$HOME/Projects/dynamic-motd"
-TIMEOUT=6  # seconds per script
+TIMEOUT=10  # seconds per script
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 

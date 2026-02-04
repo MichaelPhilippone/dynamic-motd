@@ -1,65 +1,49 @@
 #!/bin/bash
-# Git repos needing attention
+# Git repos needing attention (uses cached data)
 
-# Common locations to check
-check_dirs=(
-    /home/pi
-    /home/pi/Projects
-    /home/pi/Scripts
-    /opt
-)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/cache-helpers.sh"
 
-# Directories to exclude (e.g., Trash, backups)
-exclude_patterns=(
-    "*/Trash/*"
-    "*.backup.*"
-    "*/.Trash/*"
-)
-
-found_issues=0
-
-for base_dir in "${check_dirs[@]}"; do
-    [[ ! -d "$base_dir" ]] && continue
+# Try cache first (valid for 10 minutes = 600 seconds)
+if cached=$(read_cache "git-repos" 600); then
+    [[ -z "$cached" ]] && exit 0
     
-    # Find git repos (max depth 3)
-    while IFS= read -r -d '' git_dir; do
-        repo_dir=$(dirname "$git_dir")
-        repo_name=$(basename "$repo_dir")
-        
-        # Check if repo matches any exclude pattern
-        excluded=0
-        for pattern in "${exclude_patterns[@]}"; do
-            if [[ "$repo_dir" == $pattern ]]; then
-                excluded=1
-                break
-            fi
-        done
-        
-        # Skip if excluded
-        [[ $excluded -eq 1 ]] && continue
-        
-        cd "$repo_dir" 2>/dev/null || continue
-        
-        # Check for uncommitted changes
-        if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-            if [[ $found_issues -eq 0 ]]; then
-                printf "\033[1m📦 Git Repos Needing Attention:\033[0m\n"
-                found_issues=1
-            fi
-            printf "  %-40s \033[33m⚡ Uncommitted changes\033[0m\n" "$repo_name"
-            continue
+    printf "\033[1m📦 Git Repos Needing Attention:\033[0m\n"
+    while IFS=: read -r repo status count; do
+        [[ -z "$repo" ]] && continue
+        if [[ "$status" == "uncommitted" ]]; then
+            printf "  %-40s \033[33m⚡ Uncommitted changes\033[0m\n" "$repo"
+        elif [[ "$status" == "unpushed" ]]; then
+            printf "  %-40s \033[33m⬆ %d unpushed commits\033[0m\n" "$repo" "$count"
         fi
-        
-        # Check for unpushed commits (only if tracking remote)
-        if git rev-parse --abbrev-ref @'{u}' &>/dev/null 2>&1; then
-            unpushed=$(git log @'{u}'.. --oneline 2>/dev/null | wc -l)
-            if [[ $unpushed -gt 0 ]]; then
-                if [[ $found_issues -eq 0 ]]; then
-                    printf "\033[1m📦 Git Repos Needing Attention:\033[0m\n"
-                    found_issues=1
+    done <<< "$cached"
+else
+    # Fallback: compute live (original logic)
+    check_dirs=(/home/pi /home/pi/Projects /home/pi/Scripts /opt)
+    found_issues=0
+    
+    for base_dir in "${check_dirs[@]}"; do
+        [[ ! -d "$base_dir" ]] && continue
+        while IFS= read -r -d '' git_dir; do
+            repo_dir=$(dirname "$git_dir")
+            repo_name=$(basename "$repo_dir")
+            [[ "$repo_dir" == *"Trash"* ]] && continue
+            
+            cd "$repo_dir" 2>/dev/null || continue
+            
+            if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+                [[ $found_issues -eq 0 ]] && printf "\033[1m📦 Git Repos Needing Attention:\033[0m\n" && found_issues=1
+                printf "  %-40s \033[33m⚡ Uncommitted changes\033[0m\n" "$repo_name"
+                continue
+            fi
+            
+            if git rev-parse --abbrev-ref @'{u}' &>/dev/null 2>&1; then
+                unpushed=$(git log @'{u}'.. --oneline 2>/dev/null | wc -l)
+                if [[ $unpushed -gt 0 ]]; then
+                    [[ $found_issues -eq 0 ]] && printf "\033[1m📦 Git Repos Needing Attention:\033[0m\n" && found_issues=1
+                    printf "  %-40s \033[33m⬆ %d unpushed commits\033[0m\n" "$repo_name" "$unpushed"
                 fi
-                printf "  %-40s \033[33m⬆ %d unpushed commits\033[0m\n" "$repo_name" "$unpushed"
             fi
-        fi
-    done < <(find "$base_dir" -maxdepth 3 -name .git -type d -print0 2>/dev/null)
-done
+        done < <(find "$base_dir" -maxdepth 3 -name .git -type d -print0 2>/dev/null)
+    done
+fi
