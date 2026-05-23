@@ -16,7 +16,8 @@ if cached=$(read_cache "$CACHE_KEY" 600); then
 else
     # Fallback: compute live (slower)
     cached=""
-    repos=("$HOME/Projects"/*/)
+#    repos=("$HOME/Projects"/*/)
+    repos=("$HOME"/*/)
     for repo in "${repos[@]}"; do
         [[ ! -d "$repo/.git" ]] && continue
         
